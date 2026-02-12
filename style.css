@@ -118,6 +118,7 @@ img{
 }
 
 .level-buttons button{
+    flex:1;
     margin-top:10px;
 }
 
@@ -275,3 +276,14 @@ pre{
     overflow:auto;
     font-size:15px;
 }
+
+textarea{
+    width:100%;
+    padding:12px;
+    border-radius:10px;
+    border:1px solid #ddd;
+    font-size:16px;
+    resize:vertical;
+    font-family:monospace; /* ←超おすすめ */
+}
+
