@@ -1,66 +1,48 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getFirestore,
-  collection,
-  getDocs,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const DB_NAME = "infoTrainerDB";
+const STORE = "sets";
+let db;
 
-import {
-  getStorage,
-  ref,
-  uploadBytes,
-  getDownloadURL
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+/////////////////////////////////////////////////////
+// IndexedDB 初期化
+/////////////////////////////////////////////////////
 
-const firebaseConfig = {
-  apiKey: "ここ",
-  authDomain: "ここ",
-  projectId: "ここ",
-  storageBucket: "ここ",
-  appId: "ここ"
-};
+const req = indexedDB.open(DB_NAME,1);
 
-const appFirebase = initializeApp(firebaseConfig);
-const db = getFirestore(appFirebase);
-const storage = getStorage(appFirebase);
+req.onupgradeneeded = e=>{
+    db = e.target.result;
+    db.createObjectStore(STORE,{keyPath:"id"});
+}
 
-renderHome();
+req.onsuccess = e=>{
+    db = e.target.result;
+    renderHome();
+}
 
 /////////////////////////////////////////////////////
 // 共通
 /////////////////////////////////////////////////////
 
-async function getAll(callback){
-    const snapshot = await getDocs(collection(db,"sets"));
-
-    const sets = snapshot.docs.map(doc=>({
-        id:doc.id,
-        ...doc.data()
-    }));
-
-    callback(sets);
+function getAll(callback){
+    const tx = db.transaction(STORE,"readonly");
+    const store = tx.objectStore(STORE);
+    const r = store.getAll();
+    r.onsuccess = ()=>callback(r.result);
 }
 
-async function saveSet(set,callback){
-
-    if(set.id){
-        const refDoc = doc(db,"sets",set.id);
-        await updateDoc(refDoc,set);
-    }else{
-        const docRef = await addDoc(collection(db,"sets"),set);
-        set.id = docRef.id;
-    }
-
-    callback && callback();
+function saveSet(set,callback){
+    const tx = db.transaction(STORE,"readwrite");
+    tx.objectStore(STORE).put(set);
+    tx.oncomplete = callback;
 }
 
-async function deleteSet(id){
-    await deleteDoc(doc(db,"sets",id));
-    renderHome();
+function deleteSet(id){
+    const tx = db.transaction(STORE,"readwrite");
+    tx.objectStore(STORE).delete(id);
+    tx.oncomplete = renderHome;
+}
+
+function uuid(){
+    return crypto.randomUUID();
 }
 
 const app = document.getElementById("app");
@@ -161,7 +143,7 @@ function createSet(){
     app.innerHTML=`
     <div class="card">
         <h2>問題集の名前</h2>
-        <input id="setTitle" placeholder="例: 微積分">
+        <input id="setTitle" placeholder="例: アルゴリズム">
         <button onclick="saveNewSet()">作成</button>
         <button class="secondary" onclick="renderHome()">戻る</button>
     </div>
@@ -188,19 +170,16 @@ function saveNewSet(){
 
 let currentSet;
 
-async function openSet(id){
+function openSet(id){
 
-    const refDoc = doc(db,"sets",id);
-    const snapshot = await getDocs(collection(db,"sets"));
+    const tx=db.transaction(STORE,"readonly");
+    const store=tx.objectStore(STORE);
+    const r=store.get(id);
 
-    const setDoc = snapshot.docs.find(d=>d.id===id);
-
-    currentSet = {
-        id:setDoc.id,
-        ...setDoc.data()
-    };
-
-    renderSet();
+    r.onsuccess=()=>{
+        currentSet=r.result;
+        renderSet();
+    }
 }
 
 function renderSet(){
@@ -228,7 +207,7 @@ function renderSet(){
             </div>
 
             ${p.qText ? `<p>${p.qText}</p>` : ""}
-            ${p.qImg?.map(img=>`<img src="${img}">`).join("") || ""}
+            ${p.qImg?.map(img=>`<img src="${URL.createObjectURL(img)}">`).join("") || ""}
             <button class="danger" onclick="deleteProblem(${i})">削除</button>
         `;
 
@@ -322,7 +301,7 @@ fileInput.onchange = e=>{
 let tempA=[];
 let tempAText="";
 
-async function saveProblem(){
+function saveProblem(){
 
     tempQText = document.getElementById("qText").value;
     tempAText = document.getElementById("aText").value;
@@ -332,12 +311,12 @@ async function saveProblem(){
         return;
     }
 
-    const qUrls = await uploadImages(tempQ.map(x=>x.file));
-    const aUrls = await uploadImages(tempA.map(x=>x.file));
-
     currentSet.problems.push({
-        qImg:qUrls,
-        aImg:aUrls,
+
+        // ⭐Blobだけ保存
+        qImg: tempQ.map(x=>x.file),
+        aImg: tempA.map(x=>x.file),
+
         qText: tempQText,
         aText: tempAText,
         level:0
@@ -482,7 +461,7 @@ function nextProblem(){
             <h2>問題</h2>
 
             ${current.qText ? `<p>${current.qText}</p>` : ""}
-            ${current.qImg?.map(img=>`<img src="${img}">`).join("")}
+            ${current.qImg?.map(img=>`<img src="${URL.createObjectURL(img)}">`).join("") || ""}
 
             <button id="showBtn" onclick="showAnswer()">解答を見る</button>
 
@@ -501,7 +480,7 @@ function showAnswer(){
         <h2>解説</h2>
         
         ${current.aText ? `<p>${current.aText}</p>` : ""}
-        ${current.qImg?.map(img=>`<img src="${img}">`).join("")}
+        ${current.aImg?.map(img=>`<img src="${URL.createObjectURL(img)}">`).join("") || ""}
 
         <div class="level-buttons">
             <button class="level1" onclick="rate(1)">😭 わからない</button>
