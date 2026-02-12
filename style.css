@@ -268,3 +268,10 @@ img{
 .drag-btn:active{
     cursor:grabbing;
 }
+
+pre{
+    border-radius:12px;
+    padding:14px;
+    overflow:auto;
+    font-size:15px;
+}
