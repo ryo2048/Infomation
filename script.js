@@ -36,6 +36,9 @@ function saveSet(set,callback){
 }
 
 function deleteSet(id){
+
+    if(!confirm("この問題集を削除しますか？")) return;
+
     const tx = db.transaction(STORE,"readwrite");
     tx.objectStore(STORE).delete(id);
     tx.oncomplete = renderHome;
@@ -208,6 +211,7 @@ function renderSet(){
 
             ${p.qText ? `<p>${p.qText}</p>` : ""}
             ${p.qImg?.map(img=>`<img src="${URL.createObjectURL(img)}">`).join("") || ""}
+            <button onclick="editProblem(${i})">編集</button>
             <button class="danger" onclick="deleteProblem(${i})">削除</button>
         `;
 
@@ -215,7 +219,62 @@ function renderSet(){
     })
 }
 
+function editProblem(index){
+
+    const p = currentSet.problems[index];
+
+    tempQ = (p.qImg || []).map(file=>({
+        file,
+        url:URL.createObjectURL(file)
+    }));
+
+    tempA = (p.aImg || []).map(file=>({
+        file,
+        url:URL.createObjectURL(file)
+    }));
+
+    app.innerHTML=`
+    <div class="card">
+        <h2>問題編集</h2>
+
+        <textarea id="qText" rows="4">${p.qText||""}</textarea>
+
+        <button onclick="pickImage('q')">問題画像</button>
+        <div id="previewQ"></div>
+
+        <h2>解説</h2>
+
+        <textarea id="aText" rows="8">${p.aText||""}</textarea>
+
+        <button onclick="pickImage('a')">解説画像</button>
+        <div id="previewA"></div>
+
+        <button onclick="updateProblem(${index})">保存</button>
+        <button class="secondary" onclick="renderSet()">戻る</button>
+    </div>
+    `;
+
+    renderPreview("Q");
+    renderPreview("A");
+}
+
+function updateProblem(index){
+
+    const p = currentSet.problems[index];
+
+    p.qText = document.getElementById("qText").value;
+    p.aText = document.getElementById("aText").value;
+
+    p.qImg = tempQ.map(x=>x.file);
+    p.aImg = tempA.map(x=>x.file);
+
+    saveSet(currentSet,renderSet);
+}
+
 function deleteProblem(i){
+
+    if(!confirm("この問題を削除しますか？")) return;
+
     currentSet.problems.splice(i,1);
     saveSet(currentSet,renderSet);
 }
@@ -245,14 +304,14 @@ function addProblem(){
     <div class="card">
         <h2>問題</h2>
 
-        <input id="qText" placeholder="問題文を入力（任意）">
+        <textarea id="qText" rows="4" placeholder="問題文"></textarea>
 
         <button onclick="pickImage('q')">問題画像</button>
         <div id="previewQ"></div>
 
         <h2>解説</h2>
 
-        <input id="aText" placeholder="解説文を入力（任意）">
+        <textarea id="aText" rows="8" placeholder="解説・コード"></textarea>
 
         <button onclick="pickImage('a')">解説画像</button>
         <div id="previewA"></div>
@@ -562,3 +621,26 @@ function rate(level){
         nextProblem();
     });
 }
+
+document.addEventListener("keydown", e=>{
+    if(e.target.tagName==="TEXTAREA" && e.key==="Tab"){
+        e.preventDefault();
+
+        const textarea = e.target;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+
+        // 複数行対応
+        const value = textarea.value;
+        const selected = value.slice(start, end);
+        const indented = selected.replace(/^/gm, "    ");
+
+        textarea.value =
+            value.substring(0,start)
+            + indented
+            + value.substring(end);
+
+        textarea.selectionStart = start;
+        textarea.selectionEnd = start + indented.length;
+    }
+});
