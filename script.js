@@ -252,7 +252,7 @@ function addProblem(){
 
         <h2>解説</h2>
 
-        <textarea id="aText" rows="6" placeholder="解説やコードを書いてください"></textarea>
+        <input id="aText" placeholder="解説文を入力（任意）">
 
         <button onclick="pickImage('a')">解説画像</button>
         <div id="previewA"></div>
