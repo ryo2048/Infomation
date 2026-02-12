@@ -479,7 +479,11 @@ function showAnswer(){
     area.innerHTML=`
         <h2>解説</h2>
         
-        ${current.aText ? `<p>${current.aText}</p>` : ""}
+        ${current.aText ? `
+        <pre><code class="language-c">
+        ${escapeHtml(current.aText)}
+        </code></pre>
+        ` : ""}
         ${current.aImg?.map(img=>`<img src="${URL.createObjectURL(img)}">`).join("") || ""}
 
         <div class="level-buttons">
@@ -538,6 +542,13 @@ function showResult(){
 
     },200);
 
+}
+
+function escapeHtml(text){
+    return text
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;");
 }
 
 function rate(level){
