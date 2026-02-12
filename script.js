@@ -543,10 +543,10 @@ function showAnswer(){
         ${current.aImg?.map(img=>`<img src="${URL.createObjectURL(img)}">`).join("") || ""}
 
         <div class="level-buttons">
-            <button class="level1" onclick="rate(1)">😭 わからない</button>
-            <button class="level2" onclick="rate(2)">😅 微妙</button>
-            <button class="level3" onclick="rate(3)">🙂 理解</button>
-            <button class="level4" onclick="rate(4)">😎 完璧</button>
+            <button class="level1" onclick="rate(1)">😭苦手</button>
+            <button class="level2" onclick="rate(2)">😅微妙</button>
+            <button class="level3" onclick="rate(3)">🙂理解</button>
+            <button class="level4" onclick="rate(4)">😎完璧</button>
         </div>
     `;
     
