@@ -31,22 +31,6 @@ const storage = getStorage(appFirebase);
 renderHome();
 
 /////////////////////////////////////////////////////
-// IndexedDB 初期化
-/////////////////////////////////////////////////////
-
-const req = indexedDB.open(DB_NAME,1);
-
-req.onupgradeneeded = e=>{
-    db = e.target.result;
-    db.createObjectStore(STORE,{keyPath:"id"});
-}
-
-req.onsuccess = e=>{
-    db = e.target.result;
-    renderHome();
-}
-
-/////////////////////////////////////////////////////
 // 共通
 /////////////////////////////////////////////////////
 
@@ -77,10 +61,6 @@ async function saveSet(set,callback){
 async function deleteSet(id){
     await deleteDoc(doc(db,"sets",id));
     renderHome();
-}
-
-function uuid(){
-    return crypto.randomUUID();
 }
 
 const app = document.getElementById("app");
@@ -208,16 +188,19 @@ function saveNewSet(){
 
 let currentSet;
 
-function openSet(id){
+async function openSet(id){
 
-    const tx=db.transaction(STORE,"readonly");
-    const store=tx.objectStore(STORE);
-    const r=store.get(id);
+    const refDoc = doc(db,"sets",id);
+    const snapshot = await getDocs(collection(db,"sets"));
 
-    r.onsuccess=()=>{
-        currentSet=r.result;
-        renderSet();
-    }
+    const setDoc = snapshot.docs.find(d=>d.id===id);
+
+    currentSet = {
+        id:setDoc.id,
+        ...setDoc.data()
+    };
+
+    renderSet();
 }
 
 function renderSet(){
@@ -245,7 +228,7 @@ function renderSet(){
             </div>
 
             ${p.qText ? `<p>${p.qText}</p>` : ""}
-            ${p.qImg?.map(img=>`<img src="${URL.createObjectURL(img)}">`).join("") || ""}
+            ${p.qImg?.map(img=>`<img src="${img}">`).join("") || ""}
             <button class="danger" onclick="deleteProblem(${i})">削除</button>
         `;
 
@@ -499,7 +482,7 @@ function nextProblem(){
             <h2>問題</h2>
 
             ${current.qText ? `<p>${current.qText}</p>` : ""}
-            ${p.qImg?.map(img=>`<img src="${img}">`).join("")}
+            ${current.qImg?.map(img=>`<img src="${img}">`).join("")}
 
             <button id="showBtn" onclick="showAnswer()">解答を見る</button>
 
@@ -518,7 +501,7 @@ function showAnswer(){
         <h2>解説</h2>
         
         ${current.aText ? `<p>${current.aText}</p>` : ""}
-        ${p.qImg?.map(img=>`<img src="${img}">`).join("")}
+        ${current.qImg?.map(img=>`<img src="${img}">`).join("")}
 
         <div class="level-buttons">
             <button class="level1" onclick="rate(1)">😭 わからない</button>
