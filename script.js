@@ -479,11 +479,8 @@ function showAnswer(){
     area.innerHTML=`
         <h2>解説</h2>
         
-        ${current.aText ? `
-        <pre><code class="language-c">
-        ${escapeHtml(current.aText)}
-        </code></pre>
-        ` : ""}
+        ${current.aText ? `<pre><code class="language-c">${escapeHtml(current.aText)}</code></pre>` : ""}
+
         ${current.aImg?.map(img=>`<img src="${URL.createObjectURL(img)}">`).join("") || ""}
 
         <div class="level-buttons">
@@ -493,6 +490,8 @@ function showAnswer(){
             <button class="level4" onclick="rate(4)">😎 完璧</button>
         </div>
     `;
+    
+    Prism.highlightElement(area.querySelector("code"));
 
     area.scrollIntoView({behavior:"smooth"});
 }
