@@ -2,6 +2,51 @@ const DB_NAME = "infoTrainerDB";
 const STORE = "sets";
 let db;
 
+function fileToBase64(file){
+    return new Promise(resolve=>{
+
+        const img = new Image();
+        const reader = new FileReader();
+
+        reader.onload = e=>{
+            img.src = e.target.result;
+        };
+
+        img.onload = ()=>{
+
+            const canvas = document.createElement("canvas");
+            const maxSize = 1200; // ←重要
+
+            let width = img.width;
+            let height = img.height;
+
+            if(width > height){
+                if(width > maxSize){
+                    height *= maxSize / width;
+                    width = maxSize;
+                }
+            }else{
+                if(height > maxSize){
+                    width *= maxSize / height;
+                    height = maxSize;
+                }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img,0,0,width,height);
+
+            const compressed = canvas.toDataURL("image/jpeg",0.75);
+
+            resolve(compressed);
+        };
+
+        reader.readAsDataURL(file);
+    });
+}
+
 /////////////////////////////////////////////////////
 // IndexedDB 初期化
 /////////////////////////////////////////////////////
@@ -161,7 +206,8 @@ function saveNewSet(){
         id:uuid(),
         title,
         problems:[],
-        order: Date.now()
+        order: Date.now(),
+        defaultSolveCount: 3   // ← 追加（初期値）
     }
 
     saveSet(set,renderHome);
@@ -181,70 +227,185 @@ function openSet(id){
 
     r.onsuccess=()=>{
         currentSet=r.result;
+        selectedProblemIndex = null; // ⭐追加
         renderSet();
     }
 }
 
+let selectedProblemIndex = null;
+
 function renderSet(){
+
+    selectedProblemIndex = null;
 
     app.innerHTML=`
         <div class="card">
             <h2>${currentSet.title}</h2>
+
+            <div style="margin-top:10px; display:flex; align-items:center; gap:8px;">
+                <label style="white-space:nowrap;">出題数：</label>
+                <input id="solveCount"
+                       type="number"
+                       min="1"
+                       style="width:80px;"
+                       value="${currentSet.defaultSolveCount || 3}"
+                       onchange="updateSolveCount()">
+            </div>
+
             <button onclick="startSolve()">解答モード</button>
+
             <button onclick="addProblem()">＋ 問題追加</button>
+
             <button class="secondary" onclick="renderHome()">戻る</button>
         </div>
+
+        <div id="gridContainer"></div>
     `;
 
-    currentSet.problems?.forEach((p,i)=>{
+    renderProblemGrid();
+}
 
-        const div=document.createElement("div");
-        div.className="card";
+function updateSolveCount(){
 
-        const level = p.level || 0;
+    const value = Number(document.getElementById("solveCount").value);
 
-        div.innerHTML=`
+    if(!value || value <= 0) return;
+
+    currentSet.defaultSolveCount = value;
+
+    saveSet(currentSet);
+}
+
+function renderProblemGrid(){
+
+    const grid = document.getElementById("gridContainer");
+
+    if(!currentSet.problems?.length){
+        grid.innerHTML = `<p style="text-align:center;">問題がありません</p>`;
+        return;
+    }
+
+    grid.innerHTML = `
+        <div id="problemGrid" class="problem-grid">
+            ${currentSet.problems.map((p,i)=>`
+
+                <button 
+                    data-index="${i}"
+                    class="${selectedProblemIndex===i?'active':''}"
+                    onclick="selectProblem(${i})">
+                    ${i+1}
+                </button>
+
+            `).join("")}
+        </div>
+        ${selectedProblemIndex!==null ? buildDetailHTML(selectedProblemIndex) : ""}
+    `;
+
+    enableSortable();
+}
+
+function enableSortable(){
+
+    const el = document.getElementById("problemGrid");
+
+    Sortable.create(el, {
+        animation:150,
+
+        onEnd: function (evt){
+
+            const moved = currentSet.problems.splice(evt.oldIndex,1)[0];
+            currentSet.problems.splice(evt.newIndex,0,moved);
+
+            saveSet(currentSet);
+            renderProblemGrid();
+        }
+    });
+}
+
+function buildDetailHTML(index){
+
+    const p = currentSet.problems[index];
+    const level = p.level || 0;
+
+    return `
+        <div class="card">
             <div class="problem-header">
-                <strong>問題 ${i+1}</strong>
+                <strong>問題 ${index+1}</strong>
+                <div class="level-dot level${level}"></div>
+            </div>
+
+            ${p.qText ? `<p style="white-space:pre-wrap;">${p.qText}</p>` : ""}
+            ${p.qImg?.map(img=>`<img src="${img}">`).join("") || ""}
+
+            <button onclick="editProblem(${index})">編集</button>
+            <button class="danger" onclick="deleteProblem(${index})">削除</button>
+        </div>
+    `;
+}
+
+function selectProblem(index){
+
+    // 同じのを押したら閉じる
+    if(selectedProblemIndex === index){
+        selectedProblemIndex = null;
+    }else{
+        selectedProblemIndex = index;
+    }
+    
+    renderProblemGrid(); // active更新
+
+    const p = currentSet.problems[index];
+    const level = p.level || 0;
+
+    const detail = document.getElementById("detailContainer");
+
+    detail.innerHTML = `
+        <div class="card">
+            <div class="problem-header">
+                <strong>問題 ${index+1}</strong>
                 <div class="level-dot level${level}"></div>
             </div>
 
             ${p.qText ? `<p>${p.qText}</p>` : ""}
-            ${p.qImg?.map(img=>`<img src="${URL.createObjectURL(img)}">`).join("") || ""}
-            <button onclick="editProblem(${i})">編集</button>
-            <button class="danger" onclick="deleteProblem(${i})">削除</button>
-        `;
+            ${p.qImg?.map(img=>`<img src="${img}">`).join("") || ""}
 
-        app.appendChild(div);
-    })
+            <button onclick="editProblem(${index})">編集</button>
+            <button class="danger" onclick="deleteProblem(${index})">削除</button>
+        </div>
+    `;
+
+    detail.scrollIntoView({behavior:"smooth"});
 }
 
 function editProblem(index){
+
+    tempQ = [];
+    tempA = [];
 
     const p = currentSet.problems[index];
 
     tempQ = (p.qImg || []).map(file=>({
         file,
-        url:URL.createObjectURL(file)
+        url: file
     }));
 
     tempA = (p.aImg || []).map(file=>({
         file,
-        url:URL.createObjectURL(file)
+        url: file
     }));
 
     app.innerHTML=`
     <div class="card">
         <h2>問題編集</h2>
 
-        <textarea id="qText" rows="4">${p.qText||""}</textarea>
+        <textarea id="qText" rows="4" placeholder="問題文を入力">${p.qText||""}</textarea>
 
         <button onclick="pickImage('q')">問題画像</button>
         <div id="previewQ"></div>
 
         <h2>解説</h2>
 
-        <textarea id="aText" rows="8">${p.aText||""}</textarea>
+        <textarea id="aText" rows="8" placeholder="解説文を入力">${p.aText||""}</textarea>
 
         <button onclick="pickImage('a')">解説画像</button>
         <div id="previewA"></div>
@@ -268,6 +429,9 @@ function updateProblem(index){
     p.qImg = tempQ.map(x=>x.file);
     p.aImg = tempA.map(x=>x.file);
 
+    tempQ = [];
+    tempA = [];
+
     saveSet(currentSet,renderSet);
 }
 
@@ -283,9 +447,6 @@ function removeImage(type,index){
 
     const list = type==="Q" ? tempQ : tempA;
 
-    // メモリ解放（地味に重要）
-    URL.revokeObjectURL(list[index].url);
-
     list.splice(index,1);
 
     renderPreview(type);
@@ -300,18 +461,21 @@ let tempQText="";
 
 function addProblem(){
 
+    tempQ = [];
+    tempA = [];
+
     app.innerHTML=`
     <div class="card">
         <h2>問題</h2>
 
-        <textarea id="qText" rows="4" placeholder="問題文"></textarea>
+        <textarea id="qText" rows="4" placeholder="問題文を入力"></textarea>
 
         <button onclick="pickImage('q')">問題画像</button>
         <div id="previewQ"></div>
 
         <h2>解説</h2>
 
-        <textarea id="aText" rows="8" placeholder="解説・コード"></textarea>
+        <textarea id="aText" rows="8" placeholder="解説文を入力"></textarea>
 
         <button onclick="pickImage('a')">解説画像</button>
         <div id="previewA"></div>
@@ -329,30 +493,27 @@ function pickImage(type){
     fileInput.click();
 }
 
-fileInput.onchange = e=>{
+fileInput.onchange = async e=>{
 
     const files = Array.from(e.target.files);
 
-    files.forEach(file=>{
+    for(const file of files){
 
-        // ⭐Blobのまま保存！！
-        const blobURL = URL.createObjectURL(file);
+        const base64 = await fileToBase64(file);
+
+        const obj = {
+            file: base64, // ←文字列！！
+            url: base64
+        };
 
         if(picking==='q'){
-            tempQ.push({
-                file:file,
-                url:blobURL
-            });
+            tempQ.push(obj);
             renderPreview("Q");
         }else{
-            tempA.push({
-                file:file,
-                url:blobURL
-            });
+            tempA.push(obj);
             renderPreview("A");
         }
-
-    });
+    }
 
     fileInput.value="";
 }
@@ -383,9 +544,13 @@ function saveProblem(){
 
     tempQ=[];
     tempA=[];
+    fileInput.value=""; // ←追加（地味に重要）
 
     saveSet(currentSet,renderSet);
 }
+
+let sortableQ = null;
+let sortableA = null;
 
 function renderPreview(type){
 
@@ -408,18 +573,59 @@ function renderPreview(type){
     `).join("");
 
     //////////////////////////////////////////////////
-    // ⭐画像並び替え（プロ仕様）
+    // ⭐ 既存Sortableを破棄
     //////////////////////////////////////////////////
 
-    new Sortable(el,{
+    if(isQ && sortableQ){
+        sortableQ.destroy();
+    }
+
+    if(!isQ && sortableA){
+        sortableA.destroy();
+    }
+
+    //////////////////////////////////////////////////
+    // ⭐ 新しく1個だけ作る
+    //////////////////////////////////////////////////
+
+    const instance = new Sortable(el,{
         animation:180,
         handle:".drag-btn",
-
+        draggable:".img-wrap",
+    
+        forceFallback:true,
+        fallbackOnBody:true,
+        fallbackTolerance:3,
+    
+        direction:"vertical",
+    
+        ghostClass:"sortable-ghost",
+        chosenClass:"sortable-chosen",
+    
+        delay:0,                 // ← 変更
+        delayOnTouchOnly:false,   // ← 変更
+        touchStartThreshold:3,
+    
+        swapThreshold:0.3,
+        invertSwap:false,
+    
         onEnd:(evt)=>{
-            const moved = list.splice(evt.oldIndex,1)[0];
-            list.splice(evt.newIndex,0,moved);
+            const oldIndex = evt.oldIndex;
+            const newIndex = evt.newIndex;
+    
+            if(oldIndex == null || newIndex == null) return;
+            if(oldIndex === newIndex) return;
+    
+            const moved = list.splice(oldIndex,1)[0];
+            list.splice(newIndex,0,moved);
         }
     });
+    
+    if(isQ){
+        sortableQ = instance;
+    }else{
+        sortableA = instance;
+    }
 }
 
 /////////////////////////////////////////////////////
@@ -441,9 +647,9 @@ function shuffle(array){
     return array; // ←追加
 }
 
-function buildWeightedQueue(problems){
+function buildWeightedQueue(problems, count){
 
-    const count = Math.min(3, problems.length);
+    count = Math.min(count, problems.length);
 
     // コピー（元配列を壊さない）
     let pool = [...problems];
@@ -495,9 +701,21 @@ function startSolve(){
         return;
     }
 
-    queue = buildWeightedQueue(currentSet.problems);
+    let inputValue =
+        Number(document.getElementById("solveCount").value)
+        || currentSet.defaultSolveCount
+        || 3;
+    
+    // ⭐ここで保存
+    currentSet.defaultSolveCount = inputValue;
+    saveSet(currentSet);
 
-    totalCount = queue.length; // ⭐重要
+    queue = buildWeightedQueue(
+        currentSet.problems,
+        inputValue
+    );
+
+    totalCount = queue.length;
     solvedCount = 0;
     correctCount = 0;
 
@@ -519,8 +737,8 @@ function nextProblem(){
             <h3>${solvedCount} / ${totalCount}問</h3>
             <h2>問題</h2>
 
-            ${current.qText ? `<p>${current.qText}</p>` : ""}
-            ${current.qImg?.map(img=>`<img src="${URL.createObjectURL(img)}">`).join("") || ""}
+            ${current.qText ? `<p style="white-space:pre-wrap;">${current.qText}</p>` : ""}
+            ${current.qImg?.map(img=>`<img src="${img}">`).join("") || ""}
 
             <button id="showBtn" onclick="showAnswer()">解答を見る</button>
 
@@ -538,9 +756,8 @@ function showAnswer(){
     area.innerHTML=`
         <h2>解説</h2>
         
-        ${current.aText ? `<pre><code class="language-c">${escapeHtml(current.aText)}</code></pre>` : ""}
-
-        ${current.aImg?.map(img=>`<img src="${URL.createObjectURL(img)}">`).join("") || ""}
+        ${current.aText ? `<p style="white-space:pre-wrap;">${current.aText}</p>` : ""}
+        ${current.aImg?.map(img=>`<img src="${img}">`).join("") || ""}
 
         <div class="level-buttons">
             <button class="level1" onclick="rate(1)">😭苦手</button>
@@ -549,8 +766,6 @@ function showAnswer(){
             <button class="level4" onclick="rate(4)">😎完璧</button>
         </div>
     `;
-    
-    Prism.highlightElement(area.querySelector("code"));
 
     area.scrollIntoView({behavior:"smooth"});
 }
@@ -602,13 +817,6 @@ function showResult(){
 
 }
 
-function escapeHtml(text){
-    return text
-        .replace(/&/g,"&amp;")
-        .replace(/</g,"&lt;")
-        .replace(/>/g,"&gt;");
-}
-
 function rate(level){
 
     current.level = level;
@@ -621,26 +829,3 @@ function rate(level){
         nextProblem();
     });
 }
-
-document.addEventListener("keydown", e=>{
-    if(e.target.tagName==="TEXTAREA" && e.key==="Tab"){
-        e.preventDefault();
-
-        const textarea = e.target;
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-
-        // 複数行対応
-        const value = textarea.value;
-        const selected = value.slice(start, end);
-        const indented = selected.replace(/^/gm, "    ");
-
-        textarea.value =
-            value.substring(0,start)
-            + indented
-            + value.substring(end);
-
-        textarea.selectionStart = start;
-        textarea.selectionEnd = start + indented.length;
-    }
-});
