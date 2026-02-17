@@ -318,6 +318,8 @@ function enableSortable(){
 
             saveSet(currentSet);
             renderProblemGrid();
+
+            if(window.Prism) Prism.highlightAll();
         }
     });
 }
@@ -335,6 +337,13 @@ function buildDetailHTML(index){
             </div>
 
             ${p.qText ? `<p style="white-space:pre-wrap;">${p.qText}</p>` : ""}
+            ${p.qCode ? `
+            <pre class="code-block">
+            <code class="language-c">
+            ${escapeHtml(p.qCode)}
+            </code>
+            </pre>
+            ` : ""}
             ${p.qImg?.map(img=>`<img src="${img}">`).join("") || ""}
 
             <button onclick="editProblem(${index})">編集</button>
@@ -367,12 +376,21 @@ function selectProblem(index){
             </div>
 
             ${p.qText ? `<p>${p.qText}</p>` : ""}
+            ${p.qCode ? `
+            <pre class="code-block">
+            <code class="language-c">
+            ${escapeHtml(p.qCode)}
+            </code>
+            </pre>
+            ` : ""}
             ${p.qImg?.map(img=>`<img src="${img}">`).join("") || ""}
 
             <button onclick="editProblem(${index})">編集</button>
             <button class="danger" onclick="deleteProblem(${index})">削除</button>
         </div>
     `;
+
+    if(window.Prism) Prism.highlightAll();
 
     detail.scrollIntoView({behavior:"smooth"});
 }
@@ -400,12 +418,16 @@ function editProblem(index){
 
         <textarea id="qText" rows="4" placeholder="問題文を入力">${p.qText||""}</textarea>
 
+        <textarea id="qCode" class="code-input">${p.qCode||""}</textarea>
+
         <button onclick="pickImage('q')">問題画像</button>
         <div id="previewQ"></div>
 
         <h2>解説</h2>
 
         <textarea id="aText" rows="8" placeholder="解説文を入力">${p.aText||""}</textarea>
+
+        <textarea id="aCode" class="code-input">${p.aCode||""}</textarea>
 
         <button onclick="pickImage('a')">解説画像</button>
         <div id="previewA"></div>
@@ -425,6 +447,9 @@ function updateProblem(index){
 
     p.qText = document.getElementById("qText").value;
     p.aText = document.getElementById("aText").value;
+
+    p.qCode = document.getElementById("qCode").value;
+    p.aCode = document.getElementById("aCode").value;
 
     p.qImg = tempQ.map(x=>x.file);
     p.aImg = tempA.map(x=>x.file);
@@ -470,12 +495,18 @@ function addProblem(){
 
         <textarea id="qText" rows="4" placeholder="問題文を入力"></textarea>
 
+        <h3>問題コード</h3>
+        <textarea id="qCode" class="code-input" placeholder="問題コードを入力"></textarea>
+
         <button onclick="pickImage('q')">問題画像</button>
         <div id="previewQ"></div>
 
         <h2>解説</h2>
 
-        <textarea id="aText" rows="8" placeholder="解説文を入力"></textarea>
+        <textarea id="aText" rows="6" placeholder="解説文を入力"></textarea>
+
+        <h3>解説コード</h3>
+        <textarea id="aCode" class="code-input" placeholder="解説コードを入力"></textarea>
 
         <button onclick="pickImage('a')">解説画像</button>
         <div id="previewA"></div>
@@ -485,7 +516,6 @@ function addProblem(){
     </div>
     `;
 }
-
 let picking;
 
 function pickImage(type){
@@ -532,13 +562,16 @@ function saveProblem(){
     }
 
     currentSet.problems.push({
-
-        // ⭐Blobだけ保存
+    
         qImg: tempQ.map(x=>x.file),
         aImg: tempA.map(x=>x.file),
-
+    
         qText: tempQText,
         aText: tempAText,
+    
+        qCode: document.getElementById("qCode").value,
+        aCode: document.getElementById("aCode").value,
+    
         level:0
     });
 
@@ -738,6 +771,13 @@ function nextProblem(){
             <h2>問題</h2>
 
             ${current.qText ? `<p style="white-space:pre-wrap;">${current.qText}</p>` : ""}
+            ${current.qCode ? `
+            <pre class="code-block">
+            <code class="language-c">
+            ${escapeHtml(current.qCode)}
+            </code>
+            </pre>
+            ` : ""}
             ${current.qImg?.map(img=>`<img src="${img}">`).join("") || ""}
 
             <button id="showBtn" onclick="showAnswer()">解答を見る</button>
@@ -745,6 +785,8 @@ function nextProblem(){
             <div id="answerArea"></div>
         </div>
     `;
+
+    if(window.Prism) Prism.highlightAll();
 }
 
 function showAnswer(){
@@ -757,6 +799,13 @@ function showAnswer(){
         <h2>解説</h2>
         
         ${current.aText ? `<p style="white-space:pre-wrap;">${current.aText}</p>` : ""}
+        ${current.aCode ? `
+        <pre class="code-block">
+        <code class="language-c">
+        ${escapeHtml(current.aCode)}
+        </code>
+        </pre>
+        ` : ""}
         ${current.aImg?.map(img=>`<img src="${img}">`).join("") || ""}
 
         <div class="level-buttons">
@@ -766,6 +815,8 @@ function showAnswer(){
             <button class="level4" onclick="rate(4)">😎完璧</button>
         </div>
     `;
+
+    if(window.Prism) Prism.highlightAll();
 
     area.scrollIntoView({behavior:"smooth"});
 }
@@ -828,4 +879,11 @@ function rate(level){
     saveSet(currentSet, ()=>{
         nextProblem();
     });
+}
+
+function escapeHtml(text){
+    return text
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;");
 }
