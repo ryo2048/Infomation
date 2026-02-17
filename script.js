@@ -737,7 +737,7 @@ function nextProblem(){
             <h3>${solvedCount} / ${totalCount}問</h3>
             <h2>問題</h2>
 
-            ${current.qText ? `<p style="white-space:pre-wrap;">${current.qText}</p>` : ""}
+            ${current.qText ? `<pre><code class="language-c">${escapeHtml(current.qText)}</code></pre>` : ""}
             ${current.qImg?.map(img=>`<img src="${img}">`).join("") || ""}
 
             <button id="showBtn" onclick="showAnswer()">解答を見る</button>
@@ -745,6 +745,8 @@ function nextProblem(){
             <div id="answerArea"></div>
         </div>
     `;
+
+    hljs.highlightAll();
 }
 
 function showAnswer(){
@@ -756,7 +758,7 @@ function showAnswer(){
     area.innerHTML=`
         <h2>解説</h2>
         
-        ${current.aText ? `<p style="white-space:pre-wrap;">${current.aText}</p>` : ""}
+        ${current.aText ? `<pre><code class="language-c">${escapeHtml(current.aText)}</code></pre>` : ""}
         ${current.aImg?.map(img=>`<img src="${img}">`).join("") || ""}
 
         <div class="level-buttons">
@@ -768,6 +770,16 @@ function showAnswer(){
     `;
 
     area.scrollIntoView({behavior:"smooth"});
+
+    hljs.highlightAll();
+}
+
+function escapeHtml(str){
+    if(!str) return "";
+    return str
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;");
 }
 
 function showResult(){
