@@ -417,14 +417,38 @@ function editProblem(index){
 
     renderPreview("Q");
     renderPreview("A");
+
+    setTimeout(()=>{
+    
+        window.qEditor = CodeMirror.fromTextArea(
+            document.getElementById("qText"),
+            {
+                mode: "text/x-csrc",
+                theme: "material-darker",
+                lineNumbers: true,
+                indentUnit: 4,
+                tabSize: 4
+            }
+        );
+    
+        window.aEditor = CodeMirror.fromTextArea(
+            document.getElementById("aText"),
+            {
+                mode: "text/x-csrc",
+                theme: "material-darker",
+                lineNumbers: true
+            }
+        );
+    
+    },100);
 }
 
 function updateProblem(index){
 
     const p = currentSet.problems[index];
 
-    p.qText = document.getElementById("qText").value;
-    p.aText = document.getElementById("aText").value;
+    p.qText = qEditor.getValue();
+    p.aText = aEditor.getValue();
 
     p.qImg = tempQ.map(x=>x.file);
     p.aImg = tempA.map(x=>x.file);
@@ -484,6 +508,30 @@ function addProblem(){
         <button class="secondary" onclick="renderSet()">戻る</button>
     </div>
     `;
+
+    setTimeout(()=>{
+    
+        window.qEditor = CodeMirror.fromTextArea(
+            document.getElementById("qText"),
+            {
+                mode: "text/x-csrc",
+                theme: "material-darker",
+                lineNumbers: true,
+                indentUnit: 4,
+                tabSize: 4
+            }
+        );
+    
+        window.aEditor = CodeMirror.fromTextArea(
+            document.getElementById("aText"),
+            {
+                mode: "text/x-csrc",
+                theme: "material-darker",
+                lineNumbers: true
+            }
+        );
+    
+    },100);
 }
 
 let picking;
