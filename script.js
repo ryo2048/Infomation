@@ -1,4 +1,4 @@
-const DB_NAME = "mathTrainerDB";
+const DB_NAME = "infoTrainerDB";
 const STORE = "sets";
 let db;
 
@@ -191,7 +191,7 @@ function createSet(){
     app.innerHTML=`
     <div class="card">
         <h2>問題集の名前</h2>
-        <input id="setTitle" placeholder="例: 微分積分">
+        <input id="setTitle" placeholder="例: アルゴリズム">
         <button onclick="saveNewSet()">作成</button>
         <button class="secondary" onclick="renderHome()">戻る</button>
     </div>
