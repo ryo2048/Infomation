@@ -1,4 +1,4 @@
-const DB_NAME = "infoTrainerDB";
+const DB_NAME = "mathTrainerDB";
 const STORE = "sets";
 let db;
 
@@ -191,7 +191,7 @@ function createSet(){
     app.innerHTML=`
     <div class="card">
         <h2>問題集の名前</h2>
-        <input id="setTitle" placeholder="例: アルゴリズム">
+        <input id="setTitle" placeholder="例: 微分積分">
         <button onclick="saveNewSet()">作成</button>
         <button class="secondary" onclick="renderHome()">戻る</button>
     </div>
@@ -417,38 +417,14 @@ function editProblem(index){
 
     renderPreview("Q");
     renderPreview("A");
-
-    setTimeout(()=>{
-    
-        window.qEditor = CodeMirror.fromTextArea(
-            document.getElementById("qText"),
-            {
-                mode: "text/x-csrc",
-                theme: "material-darker",
-                lineNumbers: true,
-                indentUnit: 4,
-                tabSize: 4
-            }
-        );
-    
-        window.aEditor = CodeMirror.fromTextArea(
-            document.getElementById("aText"),
-            {
-                mode: "text/x-csrc",
-                theme: "material-darker",
-                lineNumbers: true
-            }
-        );
-    
-    },100);
 }
 
 function updateProblem(index){
 
     const p = currentSet.problems[index];
 
-    p.qText = qEditor.getValue();
-    p.aText = aEditor.getValue();
+    p.qText = document.getElementById("qText").value;
+    p.aText = document.getElementById("aText").value;
 
     p.qImg = tempQ.map(x=>x.file);
     p.aImg = tempA.map(x=>x.file);
@@ -508,30 +484,6 @@ function addProblem(){
         <button class="secondary" onclick="renderSet()">戻る</button>
     </div>
     `;
-
-    setTimeout(()=>{
-    
-        window.qEditor = CodeMirror.fromTextArea(
-            document.getElementById("qText"),
-            {
-                mode: "text/x-csrc",
-                theme: "material-darker",
-                lineNumbers: true,
-                indentUnit: 4,
-                tabSize: 4
-            }
-        );
-    
-        window.aEditor = CodeMirror.fromTextArea(
-            document.getElementById("aText"),
-            {
-                mode: "text/x-csrc",
-                theme: "material-darker",
-                lineNumbers: true
-            }
-        );
-    
-    },100);
 }
 
 let picking;
@@ -785,7 +737,7 @@ function nextProblem(){
             <h3>${solvedCount} / ${totalCount}問</h3>
             <h2>問題</h2>
 
-            ${current.qText ? `<pre><code class="language-c">${escapeHtml(current.qText)}</code></pre>` : ""}
+            ${current.qText ? `<p style="white-space:pre-wrap;">${current.qText}</p>` : ""}
             ${current.qImg?.map(img=>`<img src="${img}">`).join("") || ""}
 
             <button id="showBtn" onclick="showAnswer()">解答を見る</button>
@@ -793,8 +745,6 @@ function nextProblem(){
             <div id="answerArea"></div>
         </div>
     `;
-
-    hljs.highlightAll();
 }
 
 function showAnswer(){
@@ -806,7 +756,7 @@ function showAnswer(){
     area.innerHTML=`
         <h2>解説</h2>
         
-        ${current.aText ? `<pre><code class="language-c">${escapeHtml(current.aText)}</code></pre>` : ""}
+        ${current.aText ? `<p style="white-space:pre-wrap;">${current.aText}</p>` : ""}
         ${current.aImg?.map(img=>`<img src="${img}">`).join("") || ""}
 
         <div class="level-buttons">
@@ -818,16 +768,6 @@ function showAnswer(){
     `;
 
     area.scrollIntoView({behavior:"smooth"});
-
-    hljs.highlightAll();
-}
-
-function escapeHtml(str){
-    if(!str) return "";
-    return str
-        .replace(/&/g,"&amp;")
-        .replace(/</g,"&lt;")
-        .replace(/>/g,"&gt;");
 }
 
 function showResult(){
