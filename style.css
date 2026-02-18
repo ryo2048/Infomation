@@ -325,8 +325,10 @@ textarea{
 .code-block {
     margin-top:12px;
     border-radius:12px;
-    overflow:hidden;
+    overflow:auto;        /* ←これ追加 */
     font-size:14px;
+    padding:14px;         /* ←これ追加 */
+    background:#1e1e1e;   /* ←これ追加 */
 }
 
 /* 入力用コードエリア */
