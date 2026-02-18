@@ -414,11 +414,11 @@ function editProblem(index){
 
     app.innerHTML=`
     <div class="card">
-        <h2>問題編集</h2>
+        <h2>問題</h2>
 
         <textarea id="qText" rows="4" placeholder="問題文を入力">${p.qText||""}</textarea>
 
-        <textarea id="qCode" class="code-input">${p.qCode||""}</textarea>
+        <textarea id="qCode" class="code-input" placeholder="問題コードを入力">${p.qCode||""}</textarea>
 
         <button onclick="pickImage('q')">問題画像</button>
         <div id="previewQ"></div>
@@ -427,7 +427,7 @@ function editProblem(index){
 
         <textarea id="aText" rows="8" placeholder="解説文を入力">${p.aText||""}</textarea>
 
-        <textarea id="aCode" class="code-input">${p.aCode||""}</textarea>
+        <textarea id="aCode" class="code-input" placeholder="解説コードを入力">${p.aCode||""}</textarea>
 
         <button onclick="pickImage('a')">解説画像</button>
         <div id="previewA"></div>
@@ -495,7 +495,6 @@ function addProblem(){
 
         <textarea id="qText" rows="4" placeholder="問題文を入力"></textarea>
 
-        <h3>問題コード</h3>
         <textarea id="qCode" class="code-input" placeholder="問題コードを入力"></textarea>
 
         <button onclick="pickImage('q')">問題画像</button>
@@ -505,7 +504,6 @@ function addProblem(){
 
         <textarea id="aText" rows="6" placeholder="解説文を入力"></textarea>
 
-        <h3>解説コード</h3>
         <textarea id="aCode" class="code-input" placeholder="解説コードを入力"></textarea>
 
         <button onclick="pickImage('a')">解説画像</button>
@@ -763,11 +761,10 @@ function nextProblem(){
     }
 
     current=queue.shift();
-    solvedCount++;
 
     app.innerHTML=`
         <div class="card">
-            <h3>${solvedCount} / ${totalCount}問</h3>
+            <h3>${solvedCount + 1} / ${totalCount}問</h3>
             <h2>問題</h2>
 
             ${current.qText ? `<p style="white-space:pre-wrap;">${current.qText}</p>` : ""}
@@ -782,6 +779,8 @@ function nextProblem(){
 
             <button id="showBtn" onclick="showAnswer()">解答を見る</button>
 
+            <button class="secondary" onclick="stopSolve()">解答をやめる</button>
+
             <div id="answerArea"></div>
         </div>
     `;
@@ -791,7 +790,12 @@ function nextProblem(){
 
 function showAnswer(){
 
-    document.getElementById("showBtn").style.display="none";
+    // 解答を見るボタンを消す
+    document.getElementById("showBtn").remove();
+
+    // ⭐ ここで一度「やめる」ボタンも削除する
+    const stopBtn = document.querySelector("button.secondary");
+    if(stopBtn) stopBtn.remove();
 
     const area = document.getElementById("answerArea");
 
@@ -814,6 +818,9 @@ function showAnswer(){
             <button class="level3" onclick="rate(3)">🙂理解</button>
             <button class="level4" onclick="rate(4)">😎完璧</button>
         </div>
+
+        <!-- ⭐ 理解度ボタンの下に再配置 -->
+        <button class="secondary" onclick="stopSolve()">解答をやめる</button>
     `;
 
     if(window.Prism) Prism.highlightAll();
@@ -823,7 +830,12 @@ function showAnswer(){
 
 function showResult(){
 
-    const percent = Math.round((correctCount/totalCount)*100);
+    if(solvedCount === 0){
+        renderSet();
+        return;
+    }
+
+    const percent = Math.round((correctCount/solvedCount)*100);
 
     let msg="";
 
@@ -834,7 +846,7 @@ function showResult(){
     app.innerHTML=`
         <div class="card center">
             <h2>結果</h2>
-            <h1>${correctCount} / ${totalCount}問 正解</h1>
+            <h1>${correctCount} / ${solvedCount}問 正解</h1>
 
            <div class="circle">
 
@@ -872,6 +884,8 @@ function rate(level){
 
     current.level = level;
 
+    solvedCount++;
+    
     if(level >= 3){
         correctCount++; // ⭐正解カウント
     }
@@ -879,6 +893,17 @@ function rate(level){
     saveSet(currentSet, ()=>{
         nextProblem();
     });
+}
+
+function stopSolve(){
+
+    // 1問も解いていない場合
+    if(solvedCount === 0){
+        renderSet();  // 結果表示しない
+        return;
+    }
+
+    showResult();  // 1問以上なら結果表示
 }
 
 function escapeHtml(text){
