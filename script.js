@@ -547,7 +547,7 @@ function saveProblem(){
     const qCode = document.getElementById("qCode").value;
     
     if(tempQ.length===0 && !tempQText && !qCode){
-        alert("問題は画像・文字・コードのいずれかを入れてください");
+        alert("問題は文字・コード・画像のいずれかを入れてください");
         return;
     }
 
