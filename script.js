@@ -302,6 +302,8 @@ function renderProblemGrid(){
     `;
 
     enableSortable();
+
+    if(window.Prism) Prism.highlightAll();
 }
 
 function enableSortable(){
@@ -337,13 +339,7 @@ function buildDetailHTML(index){
             </div>
 
             ${p.qText ? `<p style="white-space:pre-wrap;">${p.qText}</p>` : ""}
-            ${p.qCode ? `
-            <pre class="code-block">
-            <code class="language-c">
-            ${escapeHtml(p.qCode)}
-            </code>
-            </pre>
-            ` : ""}
+            ${p.qCode ? `<pre class="code-block"><code class="language-c">${escapeHtml(p.qCode)}</code></pre>` : ""}
             ${p.qImg?.map(img=>`<img src="${img}">`).join("") || ""}
 
             <button onclick="editProblem(${index})">編集</button>
@@ -376,13 +372,7 @@ function selectProblem(index){
             </div>
 
             ${p.qText ? `<p>${p.qText}</p>` : ""}
-            ${p.qCode ? `
-            <pre class="code-block">
-            <code class="language-c">
-            ${escapeHtml(p.qCode)}
-            </code>
-            </pre>
-            ` : ""}
+            ${p.qCode ? `<pre class="code-block"><code class="language-c">${escapeHtml(p.qCode)}</code></pre>` : ""}
             ${p.qImg?.map(img=>`<img src="${img}">`).join("") || ""}
 
             <button onclick="editProblem(${index})">編集</button>
@@ -554,8 +544,10 @@ function saveProblem(){
     tempQText = document.getElementById("qText").value;
     tempAText = document.getElementById("aText").value;
 
-    if(tempQ.length===0 && !tempQText){
-        alert("問題は画像か文字を入れてください");
+    const qCode = document.getElementById("qCode").value;
+    
+    if(tempQ.length===0 && !tempQText && !qCode){
+        alert("問題は画像・文字・コードのいずれかを入れてください");
         return;
     }
 
@@ -768,13 +760,7 @@ function nextProblem(){
             <h2>問題</h2>
 
             ${current.qText ? `<p style="white-space:pre-wrap;">${current.qText}</p>` : ""}
-            ${current.qCode ? `
-            <pre class="code-block">
-            <code class="language-c">
-            ${escapeHtml(current.qCode)}
-            </code>
-            </pre>
-            ` : ""}
+            ${current.qCode ? `<pre class="code-block"><code class="language-c">${escapeHtml(current.qCode)}</code></pre>` : ""}
             ${current.qImg?.map(img=>`<img src="${img}">`).join("") || ""}
 
             <button id="showBtn" onclick="showAnswer()">解答を見る</button>
@@ -803,13 +789,7 @@ function showAnswer(){
         <h2>解説</h2>
         
         ${current.aText ? `<p style="white-space:pre-wrap;">${current.aText}</p>` : ""}
-        ${current.aCode ? `
-        <pre class="code-block">
-        <code class="language-c">
-        ${escapeHtml(current.aCode)}
-        </code>
-        </pre>
-        ` : ""}
+        ${current.aCode ? `<pre class="code-block"><code class="language-c">${escapeHtml(current.aCode)}</code></pre>` : ""}
         ${current.aImg?.map(img=>`<img src="${img}">`).join("") || ""}
 
         <div class="level-buttons">
