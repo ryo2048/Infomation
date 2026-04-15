@@ -5,10 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>編入情報演習</title>
 <link rel="stylesheet" href="style.css">
-<link href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism-tomorrow.css" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/prismjs/prism.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-c.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-javascript.js"></script>
 </head>
 <body>
 
@@ -17,8 +13,18 @@
 <main id="app"></main>
 
 <input type="file" id="fileInput" accept="image/*" multiple hidden>
+<!-- <input type="file" id="backupInput" accept=".json"> -->
 
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const { createClient } = supabase;
+
+const SUPABASE_URL = "https://dtkjnyoqeyhbtjiilfim.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0a2pueW9xZXloYnRqaWlsZmltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxOTMyNTIsImV4cCI6MjA5MTc2OTI1Mn0.xJnTIpJGJyxsv5fDPcm_fiDrkgq8ydXxDWyC31EyIzw";
+
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+</script>
 <script src="script.js"></script>
 </body>
 </html>
