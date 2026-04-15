@@ -303,6 +303,9 @@ textarea{
     grid-template-columns:repeat(7, 1fr);
     gap:6px;   /* ←8→6 */
     margin-top:15px;
+
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 .problem-grid button{
@@ -313,34 +316,14 @@ textarea{
     background:white;
     border:1px solid #ddd;
     color:#333;
+
+    -webkit-user-select: none; /* iOS/Safari */
+    user-select: none;
+    -webkit-touch-callout: none; /* 長押しメニュー禁止（超重要） */
 }
 
 .problem-grid button.active{
     background:#4a6cff;
     color:white;
     font-weight:bold;
-}
-
-/* コード表示 */
-.code-block {
-    margin-top:12px;
-    border-radius:12px;
-    overflow:auto;        /* ←これ追加 */
-    font-size:14px;
-    padding:14px;         /* ←これ追加 */
-    background:#1e1e1e;   /* ←これ追加 */
-}
-
-/* 入力用コードエリア */
-.code-input {
-    width:100%;
-    min-height:160px;
-    font-family: "Fira Code", Consolas, monospace;
-    font-size:14px;
-    background:#1e1e1e;
-    color:#d4d4d4;
-    border-radius:12px;
-    padding:14px;
-    border:none;
-    resize:vertical;
 }
