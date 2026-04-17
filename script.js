@@ -478,7 +478,7 @@ function createSet(){
     app.innerHTML=`
     <div class="card">
         <h2>問題集の名前</h2>
-        <input id="setTitle" placeholder="例: 微分積分">
+        <input id="setTitle" placeholder="例: アルゴリズム">
         <button onclick="saveNewSet()">作成</button>
         <button class="secondary" onclick="renderHome()">戻る</button>
     </div>
@@ -724,7 +724,7 @@ function editProblem(index){
         <button onclick="pickImage('q')">問題画像</button>
         <div id="previewQ"></div>
 
-        <h2>解説</h2>
+        <h2>解説を編集</h2>
 
         <textarea id="aText" rows="8" placeholder="解説文を入力">${p.aText||""}</textarea>
 
@@ -851,7 +851,7 @@ function addProblem(){
         <button onclick="pickImage('q')">問題画像</button>
         <div id="previewQ"></div>
 
-        <h2>解説</h2>
+        <h2>解説を追加</h2>
 
         <textarea id="aText" rows="8" placeholder="解説文を入力"></textarea>
 
